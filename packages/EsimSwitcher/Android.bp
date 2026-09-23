@@ -1,0 +1,34 @@
+//
+// SPDX-FileCopyrightText: 2023-2025 Paranoid Android
+// SPDX-FileCopyrightText: 2026 The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+// Offers the switch between the eUICC and the removable SIM that shares its
+// slot. Nothing in AOSP turns one over; mtkmtb does, so the work is handed to
+// a pair of init services rather than done here, which keeps the app out of
+// the vendor domain.
+//
+// A device wanting this needs, besides the package:
+//
+//   - vendor/bin/mtkmtb from its own firmware
+//   - an init rc declaring vendor.esim_enable, vendor.esim_disable and
+//     vendor.esim_state, and the shell script the last one runs; it has to
+//     land in /vendor/etc/init, since only what the hardware rc imports by
+//     name is read out of init/hw
+//   - sepolicy for esimswitcher_app, vendor_esim_init_shell and vendor_mtkmtb
+android_app {
+    name: "EsimSwitcher",
+    certificate: "platform",
+    srcs: ["src/**/*.kt"],
+    platform_apis: true,
+    privileged: true,
+    privapp_allowlist: "privapp_whitelist_org.lineageos.esimswitcher.xml",
+    system_ext_specific: true,
+    static_libs: [
+        "androidx.core_core",
+        "androidx.preference_preference",
+        "org.lineageos.settings.resources",
+        "SettingsLib",
+    ],
+}
