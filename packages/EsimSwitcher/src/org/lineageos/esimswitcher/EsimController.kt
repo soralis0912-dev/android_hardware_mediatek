@@ -9,6 +9,7 @@ package org.lineageos.esimswitcher
 import android.content.Context
 import android.os.SystemProperties
 import android.telephony.SubscriptionManager
+import android.telephony.TelephonyManager
 import android.util.Log
 import java.io.File
 
@@ -29,10 +30,21 @@ class EsimController private constructor(private val context: Context) {
         Log.d(TAG, "onBootCompleted")
     }
 
+    // Whether a profile on the built-in eUICC is in use. A removable eUICC card
+    // in a SIM slot reports its profiles as embedded too, and counting those
+    // would refuse to turn the built-in one on for as long as such a card is in.
     fun getEsimActive(): Boolean {
+        val telephonyManager = context.getSystemService(TelephonyManager::class.java)
+        val builtInCards =
+            telephonyManager?.uiccCardsInfo
+                ?.filter { it.isEuicc && !it.isRemovable }
+                ?.map { it.cardId }
+                ?.toSet() ?: return false
         val subscriptionManager =
             context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as? SubscriptionManager
-        return subscriptionManager?.activeSubscriptionInfoList?.any { it.isEmbedded } ?: false
+        return subscriptionManager?.activeSubscriptionInfoList?.any {
+            it.isEmbedded && it.cardId in builtInCards
+        } ?: false
     }
 
     fun getEsimEnabled(): Boolean {
